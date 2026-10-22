@@ -1,0 +1,9 @@
+Resources:
+
+  MyBucket:
+    # Type dice QUE recurso de AWS vas a crear.
+    # Formato: AWS::Servicio::Recurso
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: poc-cf-bucket-sre
+    

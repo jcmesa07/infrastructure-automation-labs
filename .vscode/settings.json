@@ -1,0 +1,43 @@
+{
+  // ---------------------------------------------------------------------------
+  // Funciones intrinsecas de CloudFormation.
+  // Sin esto, redhat.vscode-yaml marca "Unresolved tag: !Sub / !Ref ..."
+  // aunque la plantilla es valida (cfn-lint la aprueba).
+  // ---------------------------------------------------------------------------
+  "yaml.customTags": [
+    "!Ref",
+    "!Sub", "!Sub sequence",
+    "!GetAtt", "!GetAtt sequence",
+    "!GetAZs",
+    "!ImportValue", "!ImportValue sequence",
+    "!Join sequence",
+    "!Select", "!Select sequence",
+    "!Split", "!Split sequence",
+    "!FindInMap sequence",
+    "!Base64",
+    "!Cidr", "!Cidr sequence",
+    "!Transform mapping",
+    "!And sequence",
+    "!Or sequence",
+    "!Not sequence",
+    "!Equals sequence",
+    "!If sequence",
+    "!Condition"
+  ],
+
+  // cfn-lint es el validador real de CloudFormation en tu maquina.
+  // Apuntamos a la ruta exacta porque no esta en el PATH del editor.
+  "cfnLint.path": "/Users/julian.mesa/Library/Python/3.9/bin/cfn-lint",
+
+  // Formato/estilo para archivos YAML.
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+
+  "files.associations": {
+    "*.yml": "yaml",
+    "*.yaml": "yaml"
+  }
+}

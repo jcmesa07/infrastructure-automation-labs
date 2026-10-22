@@ -1,0 +1,9 @@
+{
+  // Extensiones recomendadas para trabajar YAML + CloudFormation en este repo.
+  "recommendations": [
+    "redhat.vscode-yaml",                   // Lenguaje YAML + customTags de CloudFormation
+    "kddejong.vscode-cfn-lint",             // Validacion CloudFormation (motor cfn-lint)
+    "amazonwebservices.aws-toolkit-vscode", // IntelliSense: tipos, propiedades, hover docs
+    "dannysteenman.cloudformation-yaml-snippets" // Snippets para scaffolding de recursos
+  ]
+}
