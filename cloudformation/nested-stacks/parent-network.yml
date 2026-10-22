@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# PLANTILLA PADRE (nested stacks) - LAB DE RED.
+# Orquesta 5 hijos y los CABLEA pasando outputs de uno como parametros de otro:
+#
+#   vpc  --VpcId--------------->  igw
+#   vpc  --VpcId--------------->  route-table, subnet, security-group
+#   igw  --IgwId--------------->  route-table
+#   route-table --RouteTableId->  subnet
+#
+# El !GetAtt hace DOS cosas: pasa el valor Y crea la dependencia (el orden de
+# despliegue se calcula solo: vpc -> igw -> route-table -> subnet; sg en paralelo).
+#
+# OJO: nested stacks exige 'package' antes de 'deploy' (ver README.md).
+# =============================================================================
+
+Parameters:
+  Entorno:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, qa, prod]
+    Description: Entorno; prefijo de los nombres de los recursos.
+
+  CidrBloque:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR de la VPC.
+
+Resources:
+
+  # --- Hijo 1: la VPC (no depende de nadie, se crea primero) ------------------
+  Vpc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/vpc.yml
+      Parameters:
+        CidrBloque: !Ref CidrBloque
+        Entorno: !Ref Entorno
+
+  # --- Hijo 2: el IGW (recibe el VpcId del hijo Vpc) --------------------------
+  Igw:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/internet-gateway.yml
+      Parameters:
+        # cable vpc -> igw: pasa el valor y crea la dependencia
+        VpcId: !GetAtt Vpc.Outputs.VpcId
+        Entorno: !Ref Entorno
+
+  # --- Hijo 3: la route table (recibe VpcId del hijo Vpc e IgwId del hijo Igw) -----
+  RouteTable:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/route-table.yml
+      Parameters:
+        VpcId: !GetAtt Vpc.Outputs.VpcId    # cable vpc -> route-table
+        IgwId: !GetAtt Igw.Outputs.IgwId    # cable igw -> route-table
+        Entorno: !Ref Entorno
+
+  # --- Hijo 4: la subred publica (recibe VpcId y el RouteTableId del hijo RouteTable) ---
+  Subnet:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/subnet.yml
+      Parameters:
+        VpcId: !GetAtt Vpc.Outputs.VpcId                   # cable vpc         -> subnet
+        RouteTableId: !GetAtt RouteTable.Outputs.RouteTableId  # cable route-table -> subnet
+        Entorno: !Ref Entorno
+
+  # --- Hijo 5: el security group con 22 y 80 (recibe VpcId) -------------------
+  SecurityGroup:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/security-group.yml
+      Parameters:
+        VpcId: !GetAtt Vpc.Outputs.VpcId    # cable vpc -> security-group
+        Entorno: !Ref Entorno
+
+Outputs:
+  # El padre reexpone hacia fuera los outputs utiles de los hijos.
+  VpcId:
+    Description: ID de la VPC.
+    Value: !GetAtt Vpc.Outputs.VpcId
+  IgwId:
+    Description: ID del Internet Gateway.
+    Value: !GetAtt Igw.Outputs.IgwId
+  RouteTableId:
+    Description: ID de la tabla de rutas publica.
+    Value: !GetAtt RouteTable.Outputs.RouteTableId
+  SubnetId:
+    Description: ID de la subred publica.
+    Value: !GetAtt Subnet.Outputs.SubnetId
+  SecurityGroupId:
+    Description: ID del security group (22 y 80 abiertos).
+    Value: !GetAtt SecurityGroup.Outputs.SecurityGroupId

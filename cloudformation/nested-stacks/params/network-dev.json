@@ -1,0 +1,4 @@
+[
+  { "ParameterKey": "Entorno",    "ParameterValue": "dev" },
+  { "ParameterKey": "CidrBloque", "ParameterValue": "10.0.0.0/16" }
+]

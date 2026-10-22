@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO (reutilizable).
+# Crea UN bucket S3 con versionado configurable y bloqueo de acceso publico.
+# Esta plantilla NO se despliega sola: la invoca la plantilla PADRE (parent-buckets.yml)
+# tantas veces como buckets necesite, pasandole parametros distintos.
+# =============================================================================
+
+Parameters:
+  NombreBucket:
+    Type: String
+    Description: Nombre global unico del bucket (S3 exige unicidad mundial).
+
+  Versionado:
+    Type: String
+    Default: Enabled
+    AllowedValues: [Enabled, Suspended]
+    Description: Activa o suspende el versionado de objetos.
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (dev/qa/prod); la pasa el padre.
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    # Buenas practicas en recursos con estado (datos):
+    # si se borra el stack, CONSERVA el bucket en vez de destruirlo.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref NombreBucket
+      VersioningConfiguration:
+        Status: !Ref Versionado
+      # Bloqueo total de acceso publico (recomendado por defecto).
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Entorno
+          Value: !Ref Entorno
+        - Key: GestionadoPor
+          Value: cloudformation-nested
+
+Outputs:
+  # Los Outputs del hijo son como "retorna" valores al padre.
+  # El padre los lee con: !GetAtt <RecursoStack>.Outputs.<NombreOutput>
+  NombreBucket:
+    Description: Nombre del bucket creado.
+    Value: !Ref Bucket
+  ArnBucket:
+    Description: ARN del bucket creado.
+    Value: !GetAtt Bucket.Arn

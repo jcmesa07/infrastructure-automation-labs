@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO 3: tabla de rutas publica con ruta por defecto a internet.
+# RECIBE DOS outputs a la vez: VpcId (del hijo vpc) e IgwId (del hijo igw).
+# Esto es lo interesante: un hijo que depende de otros DOS, cableado por el padre.
+# =============================================================================
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: ID de la VPC (viene del hijo vpc).
+
+  IgwId:
+    Type: String
+    Description: ID del Internet Gateway (viene del hijo igw).
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (la pasa el padre).
+
+Resources:
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub "${Entorno}-poc-rt-publica"
+        - Key: Entorno
+          Value: !Ref Entorno
+
+  # Ruta por defecto (0.0.0.0/0) hacia el IGW: lo que hace "publica" a la red.
+  InternetRoute:
+    Type: AWS::EC2::Route
+    # -------------------------------------------------------------------------
+    # EJEMPLO de dependencia EXPLICITA (DependsOn). AQUI NO ES NECESARIO:
+    # el "RouteTableId: !Ref RouteTable" de abajo ya crea la dependencia
+    # IMPLICITA (esta ruta espera a que exista la RouteTable). Dejar un
+    # DependsOn aqui seria redundante -de hecho cfn-lint lo marca con W3005-.
+    # Se muestra comentado solo para ver la sintaxis:
+    #
+    # DependsOn: RouteTable
+    # -------------------------------------------------------------------------
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IgwId
+
+Outputs:
+  RouteTableId:
+    Description: ID de la tabla de rutas publica.
+    Value: !Ref RouteTable

@@ -360,7 +360,7 @@ Outputs:
 
 ## 13. Comandos del ciclo de vida
 
-(Ya los tienes en `comandos-ciclo-de-vida.md`. Resumen rápido.)
+(Ya los tienes en `COMANDOS-CICLO-DE-VIDA.md`. Resumen rápido.)
 
 ```bash
 aws cloudformation validate-template --template-body file://t.yml   # validar

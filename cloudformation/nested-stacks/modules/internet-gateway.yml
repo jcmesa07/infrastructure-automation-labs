@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO 2: el Internet Gateway (IGW) y su enganche a la VPC.
+# RECIBE el VpcId del hijo VPC (se lo pasa el padre con !GetAtt).
+# EXPONE el IgwId para que el hijo de rutas pueda apuntar la ruta a internet.
+# =============================================================================
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: ID de la VPC a la que se engancha el IGW (viene del hijo vpc).
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (la pasa el padre).
+
+Resources:
+  Igw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${Entorno}-poc-igw"
+        - Key: Entorno
+          Value: !Ref Entorno
+
+  # El IGW no sirve de nada hasta que se "engancha" (attach) a una VPC.
+  EngancheVpc:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VpcId
+      InternetGatewayId: !Ref Igw
+
+Outputs:
+  IgwId:
+    Description: ID del Internet Gateway (lo consume route-table.yml).
+    Value: !Ref Igw

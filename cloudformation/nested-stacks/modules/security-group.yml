@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO 5: security group.
+# RECIBE el VpcId (del hijo vpc). Abre los puertos 22 (SSH) y 80 (HTTP).
+# =============================================================================
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: ID de la VPC (viene del hijo vpc).
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (la pasa el padre).
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permite SSH (22) y HTTP (80).
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP
+      Tags:
+        - Key: Name
+          Value: !Sub "${Entorno}-poc-sg-web"
+        - Key: Entorno
+          Value: !Ref Entorno
+
+Outputs:
+  SecurityGroupId:
+    Description: ID del security group.
+    Value: !GetAtt SecurityGroup.GroupId

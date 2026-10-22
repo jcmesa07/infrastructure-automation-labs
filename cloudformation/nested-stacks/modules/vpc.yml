@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO 1: la VPC.
+# Es el primero de la cadena. Su Output VpcId lo consumiran los otros dos hijos
+# (igw y rutas) a traves del padre.
+# =============================================================================
+
+Parameters:
+  CidrBloque:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: Rango CIDR de la VPC.
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (la pasa el padre).
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref CidrBloque
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${Entorno}-poc-vpc"
+        - Key: Entorno
+          Value: !Ref Entorno
+
+Outputs:
+  VpcId:
+    Description: ID de la VPC (lo consumen internet-gateway.yml y route-table.yml).
+    Value: !Ref Vpc
+  VpcCidr:
+    Description: CIDR de la VPC.
+    Value: !GetAtt Vpc.CidrBlock

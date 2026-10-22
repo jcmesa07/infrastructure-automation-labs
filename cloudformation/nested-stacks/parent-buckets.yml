@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# PLANTILLA PADRE (nested stacks).
+# Reutiliza el modulo modules/bucket.yml para crear VARIOS buckets de una sola
+# vez (datos, logs, backups), cada uno con su configuracion.
+#
+# Cada hijo es un recurso de tipo AWS::CloudFormation::Stack: CloudFormation
+# crea un stack anidado por cada uno, pero TU despliegas solo este padre.
+#
+# OJO: nested stacks exige que el hijo este en S3. No se despliega con
+#      'deploy' a secas, primero se usa 'package' (ver README.md).
+# =============================================================================
+
+Parameters:
+  Entorno:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, qa, prod]
+    Description: Entorno; se usa como prefijo de los nombres de los buckets.
+
+Resources:
+
+  # --- Hijo 1: bucket de datos (versionado activo) ---------------------------
+  BucketDatos:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      # Ruta LOCAL al modulo. El comando 'aws cloudformation package' la
+      # sube a S3 y la reescribe por una URL https automaticamente.
+      TemplateURL: modules/bucket.yml
+      Parameters:
+        NombreBucket: !Sub "${Entorno}-poc-datos-sre"
+        Versionado: Enabled
+        Entorno: !Ref Entorno
+      Tags:
+        - Key: Rol
+          Value: datos
+
+  # --- Hijo 2: bucket de logs (versionado suspendido) ------------------------
+  BucketLogs:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/bucket.yml
+      Parameters:
+        NombreBucket: !Sub "${Entorno}-poc-logs-sre"
+        Versionado: Suspended
+        Entorno: !Ref Entorno
+      Tags:
+        - Key: Rol
+          Value: logs
+
+  # --- Hijo 3: bucket de backups (versionado activo) -------------------------
+  BucketBackups:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: modules/bucket.yml
+      Parameters:
+        NombreBucket: !Sub "${Entorno}-poc-backups-sre"
+        Versionado: Enabled
+        Entorno: !Ref Entorno
+      Tags:
+        - Key: Rol
+          Value: backups
+
+Outputs:
+  # Se leen los Outputs de cada stack hijo con la sintaxis:
+  #   !GetAtt <RecursoStack>.Outputs.<NombreOutputDelHijo>
+  ArnBucketDatos:
+    Description: ARN del bucket de datos (output del stack hijo).
+    Value: !GetAtt BucketDatos.Outputs.ArnBucket
+  ArnBucketLogs:
+    Description: ARN del bucket de logs.
+    Value: !GetAtt BucketLogs.Outputs.ArnBucket
+  ArnBucketBackups:
+    Description: ARN del bucket de backups.
+    Value: !GetAtt BucketBackups.Outputs.ArnBucket

@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+# =============================================================================
+# MODULO HIJO 4: subred publica.
+# RECIBE DOS outputs: VpcId (del hijo vpc) y RouteTableId (del hijo route-table).
+# Crea la subred y la ASOCIA a la tabla de rutas publica, de modo que las
+# instancias que arranquen aqui tengan salida a internet via el IGW.
+# =============================================================================
+
+Parameters:
+  VpcId:
+    Type: String
+    Description: ID de la VPC (viene del hijo vpc).
+
+  RouteTableId:
+    Type: String
+    Description: ID de la tabla de rutas publica (viene del hijo route-table).
+
+  CidrSubnet:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: Rango CIDR de la subred (dentro del CIDR de la VPC).
+
+  Entorno:
+    Type: String
+    Default: dev
+    Description: Etiqueta de entorno (la pasa el padre).
+
+Resources:
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      CidrBlock: !Ref CidrSubnet
+      # Subred publica: asigna IP publica automaticamente a lo que arranque aqui.
+      MapPublicIpOnLaunch: true
+      # Primera AZ de la region, sin necesidad de parametro.
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags:
+        - Key: Name
+          Value: !Sub "${Entorno}-poc-subnet-publica"
+        - Key: Entorno
+          Value: !Ref Entorno
+
+  # Asociar la subred a la tabla de rutas = lo que la hace realmente "publica".
+  RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      RouteTableId: !Ref RouteTableId
+
+Outputs:
+  SubnetId:
+    Description: ID de la subred publica.
+    Value: !Ref Subnet
